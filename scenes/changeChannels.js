@@ -1,25 +1,32 @@
 const { Scenes, Markup } = require("telegraf");
 
-const channelsToSubscribe = [
-  { text: "Японский с мичи", url: "https://google.com" },
-  { text: "Японский спапа", url: "https://google.com" },
-];
+
 
 const changeChannelsScene = new Scenes.BaseScene("changeChannels");
 
 changeChannelsScene.enter((ctx) => {
+  
+  const channelsToSubscribe = JSON.parse(process.env.CHANNELS)
+  const channelButtons = channelsToSubscribe.map((channel) =>
+    Markup.button.text(channel.text)
+  );
+  const chunkedButtons = [];
+  const buttonsPerRow = 3;
+  for (let i = 0; i < channelButtons.length; i += buttonsPerRow) {
+    chunkedButtons.push(channelButtons.slice(i, i + buttonsPerRow));
+  }
+
   ctx.reply(
-    "Выберите канал для подписки или добавьте новый:",
+    "Выберите канал для подписки который нужно отредактировать или добавьте новый:",
     Markup.keyboard([
-      ...channelsToSubscribe.map((channel) => [
-        Markup.button.text(channel.text),
-      ]),
-      [Markup.button.channelRequest("Добавить новый канал", 1)],
+      ...chunkedButtons,
+      [Markup.button.channelRequest("Добавить новый канал", 1)]
     ])
-      .oneTime()
-      .resize()
+      .oneTime(true)
+      .resize(true)
   );
 });
+
 
 changeChannelsScene.start((ctx) => {
   ctx.scene.enter("search");

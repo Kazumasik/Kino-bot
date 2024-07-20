@@ -1,6 +1,23 @@
 const { Scenes } = require("telegraf");
 const fs = require("fs");
 require("dotenv").config();
+const { message } require 'telegraf/filters'
+
+const channelsFilePath = "channels.txt";
+
+const readChannelsFromFile = () => {
+  if (fs.existsSync(channelsFilePath)) {
+    const fileContent = fs.readFileSync(channelsFilePath, "utf-8");
+    if (fileContent.trim().length > 0) {
+      return JSON.parse(fileContent);
+    }
+  }
+  return [];
+};
+
+const writeChannelsToFile = (channels) => {
+  fs.writeFileSync(channelsFilePath, JSON.stringify(channels, null, 2));
+};
 
 const addChannelScene = new Scenes.WizardScene(
   "addChannel",
@@ -20,21 +37,15 @@ const addChannelScene = new Scenes.WizardScene(
 
     const newChannel = ctx.wizard.state.channel;
 
-    // Чтение существующих каналов из .env
-    let channels = process.env.CHANNELS ? JSON.parse(process.env.CHANNELS) : [];
+    // Чтение существующих каналов из файла
+    let channels = readChannelsFromFile();
     channels.push(newChannel);
 
-    // Запись обновленного списка каналов в .env
-    const envData = `
-    TELEGRAM_TOKEN = '${process.env.TELEGRAM_TOKEN}'
-    ADMINS = ${process.env.ADMINS}
-    CHANNELS=${JSON.stringify(channels)}
-    `;
-
-    fs.writeFileSync(".env", envData.trim());
+    // Запись обновленного списка каналов в файл
+    writeChannelsToFile(channels);
 
     ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
-    ctx.scene.leave();
+    ctx.scene.enter('changeChannels');
   }
 );
 

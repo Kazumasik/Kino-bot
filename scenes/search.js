@@ -9,7 +9,8 @@ const channelsToSubscribe = [
 const searchScene = new Scenes.BaseScene("search");
 
 searchScene.enter((ctx) => {
-  ctx.reply("🔎 Для поиска отправьте КОД фильма/сериала");
+  ctx.reply("🔎 Для поиска отправьте КОД фильма/сериала", Markup.removeKeyboard(true));
+
 });
 
 searchScene.command("change_channels", adminCheck, (ctx) => {
@@ -28,7 +29,6 @@ searchScene.on("text", (ctx) => {
       .oneTime()
       .resize()
   );
-  ctx.scene.leave(); // Покидаем сцену после отправки клавиатуры
 });
 
 module.exports = { searchScene };

@@ -3,7 +3,7 @@ require("dotenv").config();
 const { searchScene } = require("./scenes/search");
 const { changeChannelsScene } = require("./scenes/changeChannels");
 const { addChannelScene } = require("./scenes/addChannel");
-
+const { adminCheck } = require("./middlewares/adminCheck");
 // Создаем экземпляр бота
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 
@@ -19,6 +19,10 @@ bot.use(stage.middleware());
 
 // Команда /start
 bot.start((ctx) => ctx.scene.enter("search"));
+bot.command("change_channels", adminCheck, (ctx) => {
+  ctx.scene.enter("changeChannels");
+});
+
 
 bot.launch();
 
