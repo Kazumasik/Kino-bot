@@ -1,40 +1,37 @@
+require("dotenv").config();
 const express = require("express");
-require('dotenv').config()
-const TelegramBot = require('node-telegram-bot-api');
+const TelegramBot = require("node-telegram-bot-api");
+const BotHandlers = require("./botHandlers");
+
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
-const channelsToSubscribe = [{ text: 'Японский с мичи', url: 'google.com' }, { text: 'Японский спапа', url: 'google.com' },]
+const channelsToSubscribe = [
+  { text: "Японский с мичи", url: "google.com" },
+  { text: "Японский спапа", url: "google.com" },
+];
+const botHandlers = new BotHandlers(bot, channelsToSubscribe);
+bot.on("chat_shared", async (msg) => {
+  console.log("Информация о канале:", msg.chat_shared);
+});
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text;
+  const userId = msg.from.id;
 
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-    if (text === '/start') {
-        await bot.sendMessage(chatId, `Привет, ${msg.from.first_name}. Чтобы получить названия фильма, подпишись на каналы ниже:`, {
-            reply_markup: {
-                inline_keyboard: [
-                    ...channelsToSubscribe.map(channel => [{ text: channel.text, url: channel.url }]),
-                    [{ text: 'Я подписался', callback_data: 'subscribed' }]
-                ]
-            }
-        })
-    }
+  if (text === "/start") {
+    await botHandlers.handleStart(chatId, msg.from);
+  } else if (
+    text === "/change_channels" &&
+    process.env.ADMINS.includes(userId)
+  ) {
+    await botHandlers.handleChangeChannels(chatId);
+  } else {
+    await botHandlers.handleCode(chatId, msg.from);
+  }
 });
 
-bot.on('callback_query', async (query) => {
-    const chatId = query.message.chat.id;
-    if (query.data === 'subscribed') {
-        // Выводим текст в консоль
-        console.log('Пользователь нажал кнопку "Я подписался"');
-        const check = await bot.getChatMember(-1002109858898, query.from.id)
-
-        console.log(check)
-        // Отправляем сообщение пользователю
-        bot.sendMessage(chatId, 'Спасибо за подписку!');
-
-        // Опционально: можно закрыть уведомление о нажатии кнопки
-        bot.answerCallbackQuery(query.id);
-    }
+bot.on("callback_query", async (query) => {
+  await botHandlers.handleSubscription(query);
 });
-console.log(process.env.TELEGRAM_TOKEN)
 
 // const TelegramBot = require('node-telegram-bot-api');
 // const cors = require('cors');
