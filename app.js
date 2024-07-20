@@ -9,13 +9,19 @@ const channelsToSubscribe = [
   { text: "Японский спапа", url: "google.com" },
 ];
 const botHandlers = new BotHandlers(bot, channelsToSubscribe);
-bot.on("chat_shared", async (msg) => {
-  console.log("Информация о канале:", msg.chat_shared);
+bot.on("callback_query", async (query) => {
+  await botHandlers.handleSubscription(query);
 });
 bot.on("message", async (msg) => {
+  console.log(msg)
   const chatId = msg.chat.id;
   const text = msg.text;
   const userId = msg.from.id;
+  if (msg.chat_shared) {
+    botHandlers.requestChannelDetails(chatId, msg.chat_shared.chat_id);
+
+  }
+
 
   if (text === "/start") {
     await botHandlers.handleStart(chatId, msg.from);
@@ -27,11 +33,10 @@ bot.on("message", async (msg) => {
   } else {
     await botHandlers.handleCode(chatId, msg.from);
   }
+
 });
 
-bot.on("callback_query", async (query) => {
-  await botHandlers.handleSubscription(query);
-});
+
 
 // const TelegramBot = require('node-telegram-bot-api');
 // const cors = require('cors');
