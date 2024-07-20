@@ -1,9 +1,12 @@
 require("dotenv").config();
 
 class BotHandlers {
-  constructor(bot, channelsToSubscribe) {
+  constructor(bot) {
     this.bot = bot;
-    this.channelsToSubscribe = channelsToSubscribe;
+    this.channelsToSubscribe = [
+      { text: "Японский с мичи", url: "google.com" },
+      { text: "Японский спапа", url: "google.com" },
+    ];
     this.awaitingChannelDetails = {};
   }
 
@@ -102,7 +105,10 @@ class BotHandlers {
   }
   async requestChannelDetails(chatId, channelId) {
     this.awaitingChannelDetails[chatId] = { channelId, step: 1 };
-    await this.bot.sendMessage(chatId, "Пожалуйста, отправьте название канала.");
+    await this.bot.sendMessage(
+      chatId,
+      "Пожалуйста, отправьте название канала."
+    );
   }
 
   async handleChannelDetailsResponse(chatId, userId, text) {
@@ -110,25 +116,34 @@ class BotHandlers {
     if (userState.step === 1) {
       userState.name = text;
       userState.step = 2;
-      await this.bot.sendMessage(chatId, "Теперь отправьте ссылку-приглашение на канал.");
+      await this.bot.sendMessage(
+        chatId,
+        "Теперь отправьте ссылку-приглашение на канал."
+      );
     } else if (userState.step === 2) {
-      const urlPattern = new RegExp('^(https?:\\/\\/)?' + // validate protocol
-        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*).)+[a-z]{2,}|' + // domain name
-        '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-        '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-        '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+      const urlPattern = new RegExp(
+        "^(https?:\\/\\/)?" + // validate protocol
+          "((([a-z\\d]([a-z\\d-]*[a-z\\d])*).)+[a-z]{2,}|" + // domain name
+          "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+          "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+          "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+          "(\\#[-a-z\\d_]*)?$",
+        "i"
+      ); // fragment locator
 
       if (urlPattern.test(text)) {
         userState.url = text;
         this.channelsToSubscribe.push({
           text: userState.name,
-          url: userState.url
+          url: userState.url,
         });
         delete this.awaitingChannelDetails[chatId];
         await this.bot.sendMessage(chatId, "Канал успешно добавлен!");
       } else {
-        await this.bot.sendMessage(chatId, "Неправильная ссылка. Попробуйте снова.");
+        await this.bot.sendMessage(
+          chatId,
+          "Неправильная ссылка. Попробуйте снова."
+        );
       }
     }
   }

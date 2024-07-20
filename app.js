@@ -1,42 +1,58 @@
+const { Telegraf, Scenes, session } = require("telegraf");
 require("dotenv").config();
-const express = require("express");
-const TelegramBot = require("node-telegram-bot-api");
-const BotHandlers = require("./botHandlers");
+const { searchScene } = require("./scenes/search");
+const { changeChannelsScene } = require("./scenes/changeChannels");
+const { addChannelScene } = require("./scenes/addChannel");
 
-const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
-const channelsToSubscribe = [
-  { text: "Японский с мичи", url: "google.com" },
-  { text: "Японский спапа", url: "google.com" },
-];
-const botHandlers = new BotHandlers(bot, channelsToSubscribe);
-bot.on("callback_query", async (query) => {
-  await botHandlers.handleSubscription(query);
-});
-bot.on("message", async (msg) => {
-  console.log(msg)
-  const chatId = msg.chat.id;
-  const text = msg.text;
-  const userId = msg.from.id;
-  if (msg.chat_shared) {
-    botHandlers.requestChannelDetails(chatId, msg.chat_shared.chat_id);
+// Создаем экземпляр бота
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 
-  }
+// Stage для управления сценами
+const stage = new Scenes.Stage([
+  searchScene,
+  changeChannelsScene,
+  addChannelScene,
+]);
 
+bot.use(session());
+bot.use(stage.middleware());
 
-  if (text === "/start") {
-    await botHandlers.handleStart(chatId, msg.from);
-  } else if (
-    text === "/change_channels" &&
-    process.env.ADMINS.includes(userId)
-  ) {
-    await botHandlers.handleChangeChannels(chatId);
-  } else {
-    await botHandlers.handleCode(chatId, msg.from);
-  }
+// Команда /start
+bot.start((ctx) => ctx.scene.enter("search"));
 
-});
+bot.launch();
 
+//
+// const TelegramBot = require("node-telegram-bot-api");
+// const BotHandlers = require("./botHandlers");
 
+// const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
+
+// const botHandlers = new BotHandlers(bot);
+// bot.on("callback_query", async (query) => {
+//   await botHandlers.handleSubscription(query);
+// });
+// bot.on("message", async (msg) => {
+//   console.log(msg);
+//   const chatId = msg.chat.id;
+//   const text = msg.text;
+//   const userId = msg.from.id;
+//   if (msg.chat_shared) {
+//     botHandlers.requestChannelDetails(chatId, msg.chat_shared.chat_id);
+//     return;
+//   }
+
+//   if (text === "/start") {
+//     await botHandlers.handleStart(chatId, msg.from);
+//   } else if (
+//     text === "/change_channels" &&
+//     process.env.ADMINS.includes(userId)
+//   ) {
+//     await botHandlers.handleChangeChannels(chatId);
+//   } else {
+//     await botHandlers.handleCode(chatId, msg.from);
+//   }
+// });
 
 // const TelegramBot = require('node-telegram-bot-api');
 // const cors = require('cors');
