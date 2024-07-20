@@ -27,7 +27,7 @@ changeChannelsScene.start((ctx) => {
 
 changeChannelsScene.on("chat_shared", async (ctx) => {
   console.log(ctx.message);
-  ctx.session.movies = movies;
+  ctx.session.channelId = ctx.message.chat_shared.chat_id;
   ctx.scene.enter("addChannel");
 });
 

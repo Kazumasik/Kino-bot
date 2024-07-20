@@ -1,5 +1,6 @@
 const { Scenes } = require("telegraf");
 const fs = require("fs");
+require("dotenv").config();
 
 const addChannelScene = new Scenes.WizardScene(
   "addChannel",
@@ -15,6 +16,8 @@ const addChannelScene = new Scenes.WizardScene(
   },
   (ctx) => {
     ctx.wizard.state.channel.url = ctx.message.text;
+    ctx.wizard.state.channel.id = ctx.session.channelId;
+
     const newChannel = ctx.wizard.state.channel;
 
     // Чтение существующих каналов из .env
@@ -22,9 +25,13 @@ const addChannelScene = new Scenes.WizardScene(
     channels.push(newChannel);
 
     // Запись обновленного списка каналов в .env
-    fs.writeFileSync(".env", `CHANNELS=${JSON.stringify(channels)}\n`, {
-      flag: "a",
-    });
+    const envData = `
+    TELEGRAM_TOKEN = '${process.env.TELEGRAM_TOKEN}'
+    ADMINS = ${process.env.ADMINS}
+    CHANNELS=${JSON.stringify(channels)}
+    `;
+
+    fs.writeFileSync(".env", envData.trim());
 
     ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
     ctx.scene.leave();
