@@ -1,8 +1,10 @@
 const { Scenes, Markup } = require("telegraf");
+const { readChannelsFromFile, removeChannelById } = require("../utils");
 
 const changeChannelsScene = new Scenes.BaseScene("changeChannels");
 
 changeChannelsScene.enter((ctx) => {
+  ctx.session.channels = readChannelsFromFile()
   const channelsToSubscribe = ctx.session.channels;
   const channelButtons = channelsToSubscribe.map((channel) =>
     Markup.button.callback(channel.text, `channel_${channel.id}`)
@@ -23,9 +25,9 @@ changeChannelsScene.enter((ctx) => {
   );
 });
 changeChannelsScene.action(/channel_(.+)/, (ctx) => {
+  console.log('CTX',ctx)
   const channelId = ctx.match[1];
   const channel = ctx.session.channels.find((ch) => {
-    console.log(ch.id, channelId);
     return ch.id === +channelId;
   });
 
@@ -33,8 +35,8 @@ changeChannelsScene.action(/channel_(.+)/, (ctx) => {
     ctx.reply(
       `Название: ${channel.text}\nСсылка: ${channel.url}\nID: ${channel.id}`,
       Markup.inlineKeyboard([
-        Markup.button.callback("Удалить", `delete_channel_${channel.id}`),
-        Markup.button.callback("Изменить", `edit_channel_${channel.id}`),
+        Markup.button.callback("Удалить", `delete_${channel.id}`),
+        Markup.button.callback("Изменить", `edit_${channel.id}`),
       ])
     );
   } else {
@@ -42,24 +44,13 @@ changeChannelsScene.action(/channel_(.+)/, (ctx) => {
   }
 });
 
-changeChannelsScene.action(/delete_channel_(.+)/, (ctx) => {
+changeChannelsScene.action(/delete_(.+)/, (ctx) => {
   const channelId = ctx.match[1];
+  removeChannelById(channelId)
   ctx.reply(`Канал с ID ${channelId} был удален.`);
+  ctx.scene.enter('changeChannels')
 });
-changeChannelsScene.on("chat_shared", async (ctx) => {
-  ctx.session.channelId = ctx.message.chat_shared.chat_id;
-  console.log(ctx.message.from.id);
-  try {
-    // Получаем информацию о статусе бота в чате
-    const chatMember = await ctx.getChatMember(
-      ctx.message.from.id,
-      ctx.message.chat_shared.chat_id
-    );
-    console.log(chatMember);
-  } catch (error) {
-    console.error("Error checking bot admin status:", error);
-    ctx.reply("Произошла ошибка при проверке статуса администратора.");
-  }
+changeChannelsScene.action('add_new_channel', (ctx) => {
   ctx.scene.enter("addChannel");
 });
 

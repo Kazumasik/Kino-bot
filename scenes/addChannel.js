@@ -1,13 +1,31 @@
-const { Scenes } = require("telegraf");
+const { Scenes, Markup } = require("telegraf");
 require("dotenv").config();
-const { readChannelsFromFile, writeChannelsToFile } = require("../utils");
+const { readChannelsFromFile, writeChannelsToFile, addChannel } = require("../utils");
 
 const addChannelScene = new Scenes.WizardScene(
   "addChannel",
   (ctx) => {
-    ctx.reply("Введите название канала:");
+    ctx.reply(
+      "Отправьте канал в бот через кнопку ниже",
+      Markup.keyboard([
+        [Markup.button.channelRequest("Отправить канал", 1)],
+      ])
+        .oneTime()
+        .resize()
+    );
     ctx.wizard.state.channel = {};
     return ctx.wizard.next();
+  },
+  (ctx) => {
+    console.log(ctx.message)
+    if (ctx.message.chat_shared) {
+      ctx.wizard.state.channel.id = ctx.message.chat_shared.chat_id;
+      ctx.reply("Введите название для канала:", Markup.removeKeyboard(true));
+      return ctx.wizard.next();
+    } else {
+      ctx.reply("Пожалуйста, отправьте канал.");
+      return;
+    }
   },
   (ctx) => {
     ctx.wizard.state.channel.text = ctx.message.text;
@@ -16,19 +34,13 @@ const addChannelScene = new Scenes.WizardScene(
   },
   (ctx) => {
     ctx.wizard.state.channel.url = ctx.message.text;
-    ctx.wizard.state.channel.id = ctx.session.channelId;
 
     const newChannel = ctx.wizard.state.channel;
 
-    // Чтение существующих каналов из файла
-    let channels = readChannelsFromFile();
-    channels.push(newChannel);
-
-    // Запись обновленного списка каналов в файл
-    writeChannelsToFile(channels);
+    addChannel(newChannel)
 
     // Запись в переменную
-    ctx.session.channels = channels;
+    ctx.session.channels = [...ctx.session.channels, newChannel];
     ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
     ctx.scene.enter("changeChannels");
   }

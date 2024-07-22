@@ -1,5 +1,6 @@
 const fs = require("fs");
-const channelsFilePath = "channels.txt";
+const channelsFilePath = "channels.json";
+
 const readChannelsFromFile = () => {
   if (fs.existsSync(channelsFilePath)) {
     const fileContent = fs.readFileSync(channelsFilePath, "utf-8");
@@ -13,4 +14,19 @@ const readChannelsFromFile = () => {
 const writeChannelsToFile = (channels) => {
   fs.writeFileSync(channelsFilePath, JSON.stringify(channels, null, 2));
 };
-module.exports = { writeChannelsToFile, readChannelsFromFile };
+
+const addChannel = (channel) => {
+  const channels = readChannelsFromFile();
+  channels.push(channel);
+  writeChannelsToFile(channels);
+};
+
+const removeChannelById = (channelId) => {
+  let channels = readChannelsFromFile();
+
+  channels = channels.filter(channel =>
+    channel.id !== +channelId);
+  writeChannelsToFile(channels);
+};
+
+module.exports = { readChannelsFromFile, writeChannelsToFile, addChannel, removeChannelById };

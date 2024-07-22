@@ -4,6 +4,7 @@ require("dotenv").config();
 const { searchScene } = require("./scenes/search");
 const { changeChannelsScene } = require("./scenes/changeChannels");
 const { addChannelScene } = require("./scenes/addChannel");
+const {subscribeCheck} =require("./scenes/subscibeCheck")
 const { adminCheck } = require("./middlewares/adminCheck");
 const { readChannelsFromFile } = require("./utils");
 
@@ -13,6 +14,7 @@ const stage = new Scenes.Stage([
   searchScene,
   changeChannelsScene,
   addChannelScene,
+  subscribeCheck
 ]);
 bot.use(session());
 
