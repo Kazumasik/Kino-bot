@@ -1,23 +1,6 @@
 const { Scenes } = require("telegraf");
-const fs = require("fs");
 require("dotenv").config();
-const { message } require 'telegraf/filters'
-
-const channelsFilePath = "channels.txt";
-
-const readChannelsFromFile = () => {
-  if (fs.existsSync(channelsFilePath)) {
-    const fileContent = fs.readFileSync(channelsFilePath, "utf-8");
-    if (fileContent.trim().length > 0) {
-      return JSON.parse(fileContent);
-    }
-  }
-  return [];
-};
-
-const writeChannelsToFile = (channels) => {
-  fs.writeFileSync(channelsFilePath, JSON.stringify(channels, null, 2));
-};
+const { readChannelsFromFile, writeChannelsToFile } = require("../utils");
 
 const addChannelScene = new Scenes.WizardScene(
   "addChannel",
@@ -44,8 +27,10 @@ const addChannelScene = new Scenes.WizardScene(
     // Запись обновленного списка каналов в файл
     writeChannelsToFile(channels);
 
+    // Запись в переменную
+    ctx.session.channels = channels;
     ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
-    ctx.scene.enter('changeChannels');
+    ctx.scene.enter("changeChannels");
   }
 );
 

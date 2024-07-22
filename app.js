@@ -1,28 +1,29 @@
 const { Telegraf, Scenes, session } = require("telegraf");
 require("dotenv").config();
+
 const { searchScene } = require("./scenes/search");
 const { changeChannelsScene } = require("./scenes/changeChannels");
 const { addChannelScene } = require("./scenes/addChannel");
 const { adminCheck } = require("./middlewares/adminCheck");
-// Создаем экземпляр бота
+const { readChannelsFromFile } = require("./utils");
+
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 
-// Stage для управления сценами
 const stage = new Scenes.Stage([
   searchScene,
   changeChannelsScene,
   addChannelScene,
 ]);
-
 bot.use(session());
-bot.use(stage.middleware());
 
-// Команда /start
-bot.start((ctx) => ctx.scene.enter("search"));
-bot.command("change_channels", adminCheck, (ctx) => {
+bot.use(stage.middleware());
+stage.command("change_channels", adminCheck, (ctx) => {
   ctx.scene.enter("changeChannels");
 });
 
+bot.start((ctx) => {
+  ctx.scene.enter("search");
+});
 
 bot.launch();
 
