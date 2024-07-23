@@ -29,4 +29,10 @@ const removeChannelById = (channelId) => {
   writeChannelsToFile(channels);
 };
 
-module.exports = { readChannelsFromFile, writeChannelsToFile, addChannel, removeChannelById };
+
+const updateChannel = (updatedChannel) => {
+  let channels = readChannelsFromFile();
+  channels = channels.map((ch) => (+ch.id === updatedChannel.id ? updatedChannel : ch));
+  writeChannelsToFile(channels);
+};
+module.exports = { readChannelsFromFile, writeChannelsToFile, addChannel, removeChannelById, updateChannel };

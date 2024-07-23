@@ -5,7 +5,6 @@ console.log("Deleting last message", ctx.session?.lastMessageId);
     ctx.session.lastMessageId = null;
 
   }
-  console.log("Deleted last message", ctx.session?.lastMessageId);
   next();
 };
 

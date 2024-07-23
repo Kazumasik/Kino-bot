@@ -4,6 +4,7 @@ require("dotenv").config();
 const { searchScene } = require("./scenes/search");
 const { changeChannelsScene } = require("./scenes/changeChannels");
 const { addChannelScene } = require("./scenes/addChannel");
+const {editChannelScene} = require("./scenes/edtChannel")
 const { subscribeCheck } = require("./scenes/subscibeCheck");
 const { adminCheck } = require("./middlewares/adminCheck");
 const { readChannelsFromFile } = require("./utils");
@@ -16,11 +17,14 @@ const stage = new Scenes.Stage([
   changeChannelsScene,
   addChannelScene,
   subscribeCheck,
+  editChannelScene,
 ]);
 bot.use(session());
 bot.use(deleteLastMessage);
 bot.use(stage.middleware());
-
+bot.command("change_channels", adminCheck, (ctx) => {
+  ctx.scene.enter("changeChannels");
+});
 stage.command("change_channels", adminCheck, (ctx) => {
   ctx.scene.enter("changeChannels");
 });

@@ -57,6 +57,18 @@ changeChannelsScene.action(/delete_(.+)/, (ctx) => {
 changeChannelsScene.action("add_new_channel", (ctx) => {
   ctx.scene.enter("addChannel");
 });
+changeChannelsScene.action(/edit_(.+)/, (ctx) => {
+  const channelId = ctx.match[1];
+  const channel = ctx.session.channels.find((ch) => {
+    return ch.id === +channelId;
+  });
+
+  if (channel) {
+    ctx.scene.enter("editChannel", { channel });
+  } else {
+    ctx.reply("Канал не найден.");
+  }
+});
 changeChannelsScene.action("back", (ctx) => {
   ctx.scene.enter("changeChannels");
 });

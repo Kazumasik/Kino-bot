@@ -16,8 +16,18 @@ const addChannelScene = new Scenes.WizardScene(
     ctx.wizard.state.channel = {};
     return ctx.wizard.next();
   },
-  (ctx) => {
+  async (ctx) => {
     if (ctx.message.chat_shared) {
+      try {
+        const chatMember = await ctx.telegram.getChatMember(ctx.wizard.state.channel.id, ctx.botInfo.id);
+        if (chatMember.status !== 'administrator' && chatMember.status !== 'creator') {
+          ctx.reply('Бот должен быть администратором в канале.');
+          return ctx.scene.enter('changeChannels');
+        }
+      } catch (error) {
+        ctx.reply('Не удалось получить информацию о канале. Пожалуйста, убедитесь, что бот является администратором в канале.');
+        return ctx.scene.enter('changeChannels');
+      }
       ctx.wizard.state.channel.id = ctx.message.chat_shared.chat_id;
       ctx.reply("Введите название для канала:", Markup.removeKeyboard(true));
       return ctx.wizard.next();
