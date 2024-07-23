@@ -25,7 +25,6 @@ changeChannelsScene.enter((ctx) => {
   );
 });
 changeChannelsScene.action(/channel_(.+)/, (ctx) => {
-  console.log('CTX',ctx)
   const channelId = ctx.match[1];
   const channel = ctx.session.channels.find((ch) => {
     return ch.id === +channelId;
@@ -34,10 +33,11 @@ changeChannelsScene.action(/channel_(.+)/, (ctx) => {
   if (channel) {
     ctx.reply(
       `Название: ${channel.text}\nСсылка: ${channel.url}\nID: ${channel.id}`,
-      Markup.inlineKeyboard([
+      Markup.inlineKeyboard([[
         Markup.button.callback("Удалить", `delete_${channel.id}`),
         Markup.button.callback("Изменить", `edit_${channel.id}`),
-      ])
+
+      ], [Markup.button.callback("Вернуться", `back`)]])
     );
   } else {
     ctx.reply("Канал не найден.");
@@ -52,6 +52,9 @@ changeChannelsScene.action(/delete_(.+)/, (ctx) => {
 });
 changeChannelsScene.action('add_new_channel', (ctx) => {
   ctx.scene.enter("addChannel");
+});
+changeChannelsScene.action('back', (ctx) => {
+  ctx.scene.enter("changeChannels");
 });
 
 module.exports = { changeChannelsScene };

@@ -17,7 +17,6 @@ searchScene.command("change_channels", adminCheck, (ctx) => {
 });
 
 searchScene.on("text", (ctx) => {
-  const channels = readChannelsFromFile();
   ctx.scene.enter("subscribeCheck")
 });
 

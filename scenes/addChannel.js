@@ -17,7 +17,6 @@ const addChannelScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
   (ctx) => {
-    console.log(ctx.message)
     if (ctx.message.chat_shared) {
       ctx.wizard.state.channel.id = ctx.message.chat_shared.chat_id;
       ctx.reply("Введите название для канала:", Markup.removeKeyboard(true));
@@ -29,21 +28,30 @@ const addChannelScene = new Scenes.WizardScene(
   },
   (ctx) => {
     ctx.wizard.state.channel.text = ctx.message.text;
-    ctx.reply("Введите ссылку на канал:");
+    ctx.reply("Введите ссылку на канал в формате https://t.me/________:");
     return ctx.wizard.next();
   },
-  (ctx) => {
-    ctx.wizard.state.channel.url = ctx.message.text;
+  async (ctx) => {
+    const url = ctx.message.text;
+    const telegramChannelRegex = /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/)([a-zA-Z0-9_]{5,}|\+[a-zA-Z0-9_]+)$/;
+
+
+    if (!telegramChannelRegex.test(url)) {
+      ctx.reply('Неправильный формат ссылки, должно быть https://t.me/___:')
+      return
+    }
+    ctx.wizard.state.channel.url = url;
 
     const newChannel = ctx.wizard.state.channel;
 
-    addChannel(newChannel)
+    addChannel(newChannel);
 
     // Запись в переменную
     ctx.session.channels = [...ctx.session.channels, newChannel];
-    ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
-    ctx.scene.enter("changeChannels");
+    await ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
+    await ctx.scene.enter("changeChannels"); ctx.wizard.state.channel.url = url;
   }
 );
+
 
 module.exports = { addChannelScene };
