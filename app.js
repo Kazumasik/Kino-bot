@@ -4,9 +4,10 @@ require("dotenv").config();
 const { searchScene } = require("./scenes/search");
 const { changeChannelsScene } = require("./scenes/changeChannels");
 const { addChannelScene } = require("./scenes/addChannel");
-const {subscribeCheck} =require("./scenes/subscibeCheck")
+const { subscribeCheck } = require("./scenes/subscibeCheck");
 const { adminCheck } = require("./middlewares/adminCheck");
 const { readChannelsFromFile } = require("./utils");
+const { deleteLastMessage } = require("./middlewares/deleteLastMessage");
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 
@@ -14,11 +15,12 @@ const stage = new Scenes.Stage([
   searchScene,
   changeChannelsScene,
   addChannelScene,
-  subscribeCheck
+  subscribeCheck,
 ]);
 bot.use(session());
-
+bot.use(deleteLastMessage);
 bot.use(stage.middleware());
+
 stage.command("change_channels", adminCheck, (ctx) => {
   ctx.scene.enter("changeChannels");
 });

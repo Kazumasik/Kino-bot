@@ -49,7 +49,7 @@ const addChannelScene = new Scenes.WizardScene(
     // Запись в переменную
     ctx.session.channels = [...ctx.session.channels, newChannel];
     await ctx.reply(`Канал "${newChannel.text}" успешно добавлен!`);
-    await ctx.scene.enter("changeChannels"); ctx.wizard.state.channel.url = url;
+    await ctx.scene.enter("changeChannels");
   }
 );
 
