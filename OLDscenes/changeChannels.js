@@ -25,7 +25,7 @@ changeChannelsScene.enter(async (ctx) => {
   );
   ctx.session.lastMessageId = lastMessage.message_id;
 });
-changeChannelsScene.action(/channel_(.+)/, async(ctx) => {
+changeChannelsScene.action(/channel_(.+)/, async (ctx) => {
   const channelId = ctx.match[1];
   const channel = ctx.session.channels.find((ch) => {
     return ch.id === +channelId;

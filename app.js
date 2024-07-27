@@ -1,39 +1,25 @@
-const { Telegraf, Scenes, session } = require("telegraf");
+const { Telegraf, Scenes, session, Composer, Markup } = require("telegraf");
 require("dotenv").config();
-
-const { searchScene } = require("./scenes/search");
-const { changeChannelsScene } = require("./scenes/changeChannels");
-const { addChannelScene } = require("./scenes/addChannel");
-const {editChannelScene} = require("./scenes/edtChannel")
-const { subscribeCheck } = require("./scenes/subscibeCheck");
-const { adminCheck } = require("./middlewares/adminCheck");
-const { readChannelsFromFile } = require("./utils");
 const { deleteLastMessage } = require("./middlewares/deleteLastMessage");
+const db  = require("./db");
+const adminBot = require("./roles/admin");
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-
-const stage = new Scenes.Stage([
-  searchScene,
-  changeChannelsScene,
-  addChannelScene,
-  subscribeCheck,
-  editChannelScene,
-]);
+const stage = new Scenes.Stage();
 bot.use(session());
 bot.use(deleteLastMessage);
 bot.use(stage.middleware());
-bot.command("change_channels", adminCheck, (ctx) => {
-  ctx.scene.enter("changeChannels");
-});
-stage.command("change_channels", adminCheck, (ctx) => {
-  ctx.scene.enter("changeChannels");
-});
+
+const adminIds = process.env.ADMINS.split(' ').map(id => parseInt(id, 10));
+
+bot.use(Composer.acl(adminIds, adminBot));
 
 bot.start((ctx) => {
   ctx.scene.enter("search");
 });
-
-bot.launch();
+db.once("open", () => {
+  bot.launch();
+});
 
 //
 // const TelegramBot = require("node-telegram-bot-api");

@@ -1,4 +1,5 @@
 const { Scenes, Markup } = require("telegraf");
+const { notifyAdmins } = require("../utils");
 
 const subscribeCheck = new Scenes.BaseScene("subscribeCheck");
 
@@ -22,6 +23,11 @@ const checkSubscription = async (ctx) => {
         `Error checking subscription for channel ${channel.id}:`,
         error.response.error_code
       );
+      
+      if (error.response.error_code === 400) {
+        const errorMessage = `❗Бот не админ в канале ${channel.text}. И поэтому не может проверять подписку на этот канал.`;
+        notifyAdmins(ctx, errorMessage);
+      }
     }
   }
 
