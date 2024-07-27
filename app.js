@@ -3,6 +3,7 @@ require("dotenv").config();
 const { deleteLastMessage } = require("./middlewares/deleteLastMessage");
 const db  = require("./db");
 const adminBot = require("./roles/admin");
+const userBot = require("./roles/user");
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const stage = new Scenes.Stage();
@@ -11,14 +12,11 @@ bot.use(deleteLastMessage);
 bot.use(stage.middleware());
 
 const adminIds = process.env.ADMINS.split(' ').map(id => parseInt(id, 10));
-
+bot.use(userBot);
 bot.use(Composer.acl(adminIds, adminBot));
 
-bot.start((ctx) => {
-  ctx.scene.enter("search");
-});
 db.once("open", () => {
-  bot.launch();
+  bot.launch()
 });
 
 //
