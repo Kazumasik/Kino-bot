@@ -1,66 +1,79 @@
 const { Scenes, Markup } = require("telegraf");
+const { mainMenu, isTelegramLink } = require("../../../utils");
+const Channel = require("../../../models/channelModel");
 require("dotenv").config();
-const { updateChannel } = require("../utils");
 
-const editChannelScene = new Scenes.WizardScene(
-  "editChannel",
-  (ctx) => {
-    const channel = ctx.scene.state.channel;
-    ctx.wizard.state.channel = channel;
+const updateChannel = new Scenes.WizardScene(
+  "updateChannel",
+  async (ctx) => {
+    ctx.wizard.state.channelId = ctx.match[1]; // Извлечение ID канала из действия
+    const channel = await Channel.findById(ctx.wizard.state.channelId);
 
-    ctx.reply(
-      `Редактируем канал: ${channel.text}\nВведите новое название (или нажмите кнопку, чтобы оставить текущее):`,
-      Markup.keyboard([
-        [Markup.button.text(channel.text)],
-      ])
-        .oneTime()
-        .resize()
-    );
-    return ctx.wizard.next();
-  },
-  (ctx) => {
-    if (ctx.message.text === ctx.wizard.state.channel.text) {
-      ctx.wizard.state.channel.text = ctx.message.text;
+    if (channel) {
+      ctx.wizard.state.currentChannel = channel;
+      await ctx.reply(
+        `Редактируем канал: ${channel.title}\nВведите новое название (или нажмите кнопку, чтобы оставить текущее):`,
+        Markup.keyboard([
+          [Markup.button.text(channel.title)],
+        ])
+          .oneTime()
+          .resize()
+      );
+      return ctx.wizard.next();
     } else {
-      ctx.wizard.state.channel.text = ctx.message.text;
+      await ctx.reply("Канал не найден.");
+      return ctx.scene.leave();
     }
-    ctx.reply(
-      `Введите новую ссылку (или нажмите кнопку, чтобы оставить текущую):`,
-      Markup.keyboard([
-        [Markup.button.text(ctx.wizard.state.channel.url)],
-      ])
-        .oneTime()
-        .resize()
-    );
-    return ctx.wizard.next();
   },
   async (ctx) => {
-    if (ctx.message.text === ctx.wizard.state.channel.url) {
-      ctx.wizard.state.channel.url = ctx.message.text;
+    if (ctx.message && ctx.message.text) {
+      ctx.wizard.state.currentChannel.title = ctx.message.text;
+      await ctx.reply(
+        `Редактируем канал: ${ctx.wizard.state.currentChannel.title}\nВведите новую ссылку (или нажмите кнопку, чтобы оставить текущую):`,
+        Markup.keyboard([
+          [Markup.button.text(ctx.wizard.state.currentChannel.url)],
+        ])
+          .oneTime()
+          .resize()
+      );
+      return ctx.wizard.next();
     } else {
-      const url = ctx.message.text;
-      const telegramChannelRegex = /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/)([a-zA-Z0-9_]{5,}|\+[a-zA-Z0-9_]+)$/;
-
-      if (!telegramChannelRegex.test(url)) {
-        ctx.reply('Неправильный формат ссылки, должно быть https://t.me/___:');
-        return;
-      }
-
-      ctx.wizard.state.channel.url = url;
+      await ctx.reply(
+        "Пожалуйста, введите название для канала или нажмите кнопку с текущим названием.",
+        Markup.keyboard([
+          [Markup.button.text(ctx.wizard.state.currentChannel.title)],
+        ])
+          .oneTime()
+          .resize()
+      );
+      return;
     }
+  },
+  async (ctx) => {
+    if (ctx.message && ctx.message.text && isTelegramLink(ctx.message.text)) {
+      ctx.wizard.state.currentChannel.url = ctx.message.text;
 
-    const updatedChannel = ctx.wizard.state.channel;
-
-    updateChannel(updatedChannel);
-
-    // Обновление канала в сессии
-    ctx.session.channels = ctx.session.channels.map((ch) =>
-      ch.id === updatedChannel.id ? updatedChannel : ch
-    );
-
-    await ctx.reply(`Канал "${updatedChannel.text}" успешно обновлен!`);
-    await ctx.scene.enter("changeChannels");
+      // Сохранение изменений канала в базу данных
+      await ctx.wizard.state.currentChannel.save();
+      await ctx.reply("Канал успешно обновлен!");
+      return ctx.scene.leave();
+    } else {
+      await ctx.reply(
+        "Пожалуйста, отправьте корректную ссылку на канал (например, https://t.me/channel_name) или нажмите кнопку с текущей ссылкой.",
+        Markup.keyboard([
+          [Markup.button.text(ctx.wizard.state.currentChannel.url)],
+        ])
+          .oneTime()
+          .resize()
+      );
+      return;
+    }
   }
 );
 
-module.exports = { editChannelScene };
+
+updateChannel.leave(async (ctx) => {
+  mainMenu(ctx);
+});
+
+module.exports = { updateChannel };

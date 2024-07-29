@@ -1,18 +1,19 @@
 const fs = require("fs");
 const channelsFilePath = "channels.json";
 require("dotenv").config();
-const Admin = require('./models/adminModel');
+const Admin = require("./models/adminModel");
+const { Markup } = require("telegraf");
+const Channel = require("./models/channelModel");
 
 async function getAllAdmins() {
-    try {
-        const admins = await Admin.find({});
-        return admins;
-    } catch (error) {
-        console.error('Error fetching admins:', error);
-        throw error;
-    }
+  try {
+    const admins = await Admin.find({});
+    return admins;
+  } catch (error) {
+    console.error("Error fetching admins:", error);
+    throw error;
+  }
 }
-
 
 const readChannelsFromFile = () => {
   if (fs.existsSync(channelsFilePath)) {
@@ -58,6 +59,28 @@ const notifyAdmins = async (ctx, message) => {
     }
   }
 };
+
+const mainMenu = async (ctx) => {
+  const channels = await Channel.find();
+  const channelButtons = channels.map(channel =>
+    [Markup.button.callback(channel.title, `channel_${channel._id}`)]
+  );
+  const lastMessage = await ctx.reply(
+    "Выберите канал для подписки который нужно отредактировать или добавьте новый:",
+    Markup.inlineKeyboard([
+      ...channelButtons,
+      [Markup.button.callback("Добавить новый канал", "add_channel")],
+    ])
+  );
+  ctx.session.lastMessageId = lastMessage.message_id;
+};
+
+const isTelegramLink = (url) => {
+  const telegramChannelRegex =
+  /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/)([a-zA-Z0-9_]{5,}|\+[a-zA-Z0-9_]+)$/;
+  return telegramChannelRegex.test(url)
+}
+
 module.exports = {
   readChannelsFromFile,
   writeChannelsToFile,
@@ -65,5 +88,7 @@ module.exports = {
   removeChannelById,
   updateChannel,
   notifyAdmins,
-  getAllAdmins
+  getAllAdmins,
+  mainMenu,
+  isTelegramLink
 };

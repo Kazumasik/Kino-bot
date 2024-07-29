@@ -1,35 +1,42 @@
 const { Composer } = require("telegraf");
 const { Scenes, Markup } = require("telegraf");
 const adminBot = new Composer();
+const { mainMenu } = require("../utils");
+const Channel = require("../models/channelModel");
 adminBot.command("change", async (ctx) => {
-  // const channelsToSubscribe = ctx.session.channels;
-  // const channelButtons = channelsToSubscribe.map((channel) =>
-  //   Markup.button.callback(channel.text, `channel_${channel.id}`)
-  // );
+  mainMenu(ctx);
+});
 
-  // const chunkedButtons = [];
-  // const buttonsPerRow = 3;
-  // for (let i = 0; i < channelButtons.length; i += buttonsPerRow) {
-  //   chunkedButtons.push(channelButtons.slice(i, i + buttonsPerRow));
-  // }
-
+adminBot.action("back", async (ctx) => {
+  mainMenu(ctx);
+});
+adminBot.action("add_channel", async (ctx) => {
+  ctx.scene.enter("addChannel");
+});
+adminBot.action(/channel_(.+)/, async (ctx) => {
+  const channelId = ctx.match[1]; // Извлечение ID канала из действия
+  const channel = await Channel.findById(channelId);
   const lastMessage = await ctx.reply(
-    "Выберите канал для подписки который нужно отредактировать или добавьте новый:",
+    `Информация о канале:\nНазвание: ${channel.title}\nСсылка: ${channel.url}`,
     Markup.inlineKeyboard([
-      [Markup.button.callback("Добавить новый канал", "add_new_channel")],
+      [
+        Markup.button.callback("Удалить", `delete_${channelId}`),
+        Markup.button.callback("Изменить", `update_${channelId}`),
+      ],
+      [Markup.button.callback("Вернуться", `back`)],
     ])
   );
   ctx.session.lastMessageId = lastMessage.message_id;
 });
 
-adminBot.action("add_channel", async (ctx) => {
-  const lastMessage = await ctx.reply(
-    "Отправьте любой пост из канала который нужно добавить.",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("Вернуться", "back")],
-    ])
-  );
-  ctx.session.lastMessageId = lastMessage.message_id;
+adminBot.action(/delete_(.+)/, async (ctx) => {
+  const channelId = ctx.match[1];
+  await Channel.findByIdAndDelete(channelId);
+  mainMenu(ctx);
+});
+
+adminBot.action(/update_(.+)/, async (ctx) => {
+  ctx.scene.enter("updateChannel", { match: ctx.match });
 });
 
 module.exports = adminBot;
