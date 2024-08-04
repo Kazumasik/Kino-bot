@@ -1,8 +1,8 @@
-const { Composer } = require("telegraf");
-const { Scenes, Markup } = require("telegraf");
+const { Composer, Markup } = require("telegraf");
 const adminBot = new Composer();
-const { mainMenu } = require("../utils");
+const { mainMenu, saveLastMessage } = require("../utils");
 const Channel = require("../models/channelModel");
+
 adminBot.command("change", async (ctx) => {
   mainMenu(ctx);
 });
@@ -10,9 +10,11 @@ adminBot.command("change", async (ctx) => {
 adminBot.action("back", async (ctx) => {
   mainMenu(ctx);
 });
+
 adminBot.action("add_channel", async (ctx) => {
   ctx.scene.enter("addChannel");
 });
+
 adminBot.action(/channel_(.+)/, async (ctx) => {
   const channelId = ctx.match[1]; // Извлечение ID канала из действия
   const channel = await Channel.findById(channelId);
@@ -26,7 +28,7 @@ adminBot.action(/channel_(.+)/, async (ctx) => {
       [Markup.button.callback("Вернуться", `back`)],
     ])
   );
-  ctx.session.lastMessageId = lastMessage.message_id;
+  await saveLastMessage(ctx, lastMessage);
 });
 
 adminBot.action(/delete_(.+)/, async (ctx) => {

@@ -1,5 +1,5 @@
 const { Scenes, Markup } = require("telegraf");
-const { mainMenu, isTelegramLink } = require("../../../utils");
+const { mainMenu, isTelegramLink, saveLastMessage } = require("../../../utils");
 const Channel = require("../../../models/channelModel");
 require("dotenv").config();
 
@@ -17,10 +17,11 @@ const updateChannel = new Scenes.WizardScene(
           [Markup.button.callback("Вернуться", "back")],
         ])
       );
-      ctx.session.lastMessageId = lastMessage.message_id;
+      await saveLastMessage(ctx, lastMessage);
       return ctx.wizard.next();
     } else {
-      await ctx.reply("Канал не найден.");
+      const lastMessage = await ctx.reply("Канал не найден.");
+      await saveLastMessage(ctx, lastMessage);
       return ctx.scene.leave();
     }
   },
@@ -40,7 +41,7 @@ const updateChannel = new Scenes.WizardScene(
         [Markup.button.callback("Вернуться", "back")],
       ])
     );
-    ctx.session.lastMessageId = lastMessage.message_id;
+    await saveLastMessage(ctx, lastMessage);
     return ctx.wizard.next();
   },
   async (ctx) => {
@@ -61,16 +62,16 @@ const updateChannel = new Scenes.WizardScene(
           [Markup.button.callback("Вернуться", "back")],
         ])
       );
-      ctx.session.lastMessageId = lastMessage.message_id;
+      await saveLastMessage(ctx, lastMessage);
       return;
     }
   }
 );
+
 updateChannel.action("save_url", async (ctx) => {
   await ctx.wizard.state.currentChannel.save();
   ctx.scene.leave();
 });
-
 
 updateChannel.action("back", async (ctx) => {
   ctx.scene.leave();

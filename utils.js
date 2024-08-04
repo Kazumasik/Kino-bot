@@ -1,9 +1,8 @@
-const fs = require("fs");
-const channelsFilePath = "channels.json";
 require("dotenv").config();
 const Admin = require("./models/adminModel");
 const { Markup } = require("telegraf");
 const Channel = require("./models/channelModel");
+const redis = require("./redis");
 
 async function getAllAdmins() {
   try {
@@ -14,40 +13,12 @@ async function getAllAdmins() {
     throw error;
   }
 }
+const saveLastMessage = async (ctx, message) => {
+  const userId = ctx.from.id;
+  const redisId = await redis.get(`lastMessageId:${userId}`);
+  console.log("USerId", userId, "Ctx", message.message_id, "RedisId", redisId);
 
-const readChannelsFromFile = () => {
-  if (fs.existsSync(channelsFilePath)) {
-    const fileContent = fs.readFileSync(channelsFilePath, "utf-8");
-    if (fileContent.trim().length > 0) {
-      return JSON.parse(fileContent);
-    }
-  }
-  return [];
-};
-
-const writeChannelsToFile = (channels) => {
-  fs.writeFileSync(channelsFilePath, JSON.stringify(channels, null, 2));
-};
-
-const addChannel = (channel) => {
-  const channels = readChannelsFromFile();
-  channels.push(channel);
-  writeChannelsToFile(channels);
-};
-
-const removeChannelById = (channelId) => {
-  let channels = readChannelsFromFile();
-
-  channels = channels.filter((channel) => channel.id !== +channelId);
-  writeChannelsToFile(channels);
-};
-
-const updateChannel = (updatedChannel) => {
-  let channels = readChannelsFromFile();
-  channels = channels.map((ch) =>
-    +ch.id === updatedChannel.id ? updatedChannel : ch
-  );
-  writeChannelsToFile(channels);
+  await redis.set(`lastMessageId:${userId}`, message.message_id);
 };
 
 const notifyAdmins = async (ctx, message) => {
@@ -62,9 +33,9 @@ const notifyAdmins = async (ctx, message) => {
 
 const mainMenu = async (ctx) => {
   const channels = await Channel.find();
-  const channelButtons = channels.map(channel =>
-    [Markup.button.callback(channel.title, `channel_${channel._id}`)]
-  );
+  const channelButtons = channels.map((channel) => [
+    Markup.button.callback(channel.title, `channel_${channel._id}`),
+  ]);
   const lastMessage = await ctx.reply(
     "Выберите канал для подписки который нужно отредактировать или добавьте новый:",
     Markup.inlineKeyboard([
@@ -72,23 +43,19 @@ const mainMenu = async (ctx) => {
       [Markup.button.callback("Добавить новый канал", "add_channel")],
     ])
   );
-  ctx.session.lastMessageId = lastMessage.message_id;
+  await saveLastMessage(ctx, lastMessage);
 };
 
 const isTelegramLink = (url) => {
   const telegramChannelRegex =
-  /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/)([a-zA-Z0-9_]{5,}|\+[a-zA-Z0-9_]+)$/;
-  return telegramChannelRegex.test(url)
-}
+    /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/)([a-zA-Z0-9_]{5,}|\+[a-zA-Z0-9_]+)$/;
+  return telegramChannelRegex.test(url);
+};
 
 module.exports = {
-  readChannelsFromFile,
-  writeChannelsToFile,
-  addChannel,
-  removeChannelById,
-  updateChannel,
   notifyAdmins,
   getAllAdmins,
   mainMenu,
-  isTelegramLink
+  isTelegramLink,
+  saveLastMessage,
 };
