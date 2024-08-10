@@ -4,17 +4,24 @@ const redis = require("../redis");
 const deleteLastMessage = async (ctx, next) => {
   const userId = ctx.from.id;
   const lastMessageId = await redis.get(`lastMessageId:${userId}`);
-  
+
   if (lastMessageId) {
-    await ctx.deleteMessage(lastMessageId);
-    await redis.del(`lastMessageId:${userId}`);
+    try {
+      await ctx.deleteMessage(lastMessageId);
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      await redis.del(`lastMessageId:${userId}`);
+    } catch (e) {
+      console.error(e);
+    }
   }
-  
+
   if (ctx?.message) {
-    console.log('deleteLastMessage', ctx.message.message_id);
     await ctx.deleteMessage(ctx.message.message_id);
   }
-  
+
   next();
 };
 

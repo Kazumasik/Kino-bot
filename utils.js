@@ -3,7 +3,7 @@ const Admin = require("./models/adminModel");
 const { Markup } = require("telegraf");
 const Channel = require("./models/channelModel");
 const redis = require("./redis");
-
+const adminIds = process.env.ADMINS.split(" ").map((id) => parseInt(id, 10));
 async function getAllAdmins() {
   try {
     const admins = await Admin.find({});
@@ -15,18 +15,16 @@ async function getAllAdmins() {
 }
 const saveLastMessage = async (ctx, message) => {
   const userId = ctx.from.id;
-  const redisId = await redis.get(`lastMessageId:${userId}`);
-  console.log("USerId", userId, "Ctx", message.message_id, "RedisId", redisId);
-
   await redis.set(`lastMessageId:${userId}`, message.message_id);
 };
 
-const notifyAdmins = async (ctx, message) => {
+const notifyAdmins = async (message, ctx) => {
   for (const adminId of adminIds) {
     try {
+      console.log(`Sending message to admin ${adminId}:`, message);
       await ctx.telegram.sendMessage(adminId, message);
     } catch (error) {
-      console.error(`Failed to send message to admin ${adminId}:`);
+      console.error(`Failed to send message to admin ${adminId}:`, error);
     }
   }
 };
@@ -40,7 +38,10 @@ const mainMenu = async (ctx) => {
     "Выберите канал для подписки который нужно отредактировать или добавьте новый:",
     Markup.inlineKeyboard([
       ...channelButtons,
-      [Markup.button.callback("Добавить новый канал", "add_channel")],
+      [
+        Markup.button.callback("Изменить ссылку на канал", "change_link"),
+        Markup.button.callback("Добавить новый канал", "add_channel"),
+      ],
     ])
   );
   await saveLastMessage(ctx, lastMessage);

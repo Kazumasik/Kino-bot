@@ -41,4 +41,8 @@ adminBot.action(/update_(.+)/, async (ctx) => {
   ctx.scene.enter("updateChannel", { match: ctx.match });
 });
 
+adminBot.action("change_link", async (ctx) => {
+  ctx.scene.enter("changeLink");
+});
+
 module.exports = adminBot;

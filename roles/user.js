@@ -1,11 +1,15 @@
 const { Composer, Markup } = require("telegraf");
 const Channel = require("../models/channelModel");
-const {saveLastMessage} = require("../utils");
+const Link = require("../models/linkModel");
+const { saveLastMessage } = require("../utils");
 const adminBot = require("./admin");
+const { notifyAdmins } = require("../utils");
 const userBot = new Composer();
 
 userBot.start(async (ctx) => {
-  const lastMessage = await ctx.reply("🔎 Для поиска отправьте КОД фильма/сериала");
+  const lastMessage = await ctx.reply(
+    "🔎 Для поиска отправьте КОД фильма/сериала"
+  );
   await saveLastMessage(ctx, lastMessage);
 });
 
@@ -21,11 +25,28 @@ userBot.action("subscribed", async (ctx) => {
 
   for (const channel of channels) {
     if (channel.isAdmin) {
-      const member = await ctx.telegram.getChatMember(channel.id, userId);
-      if (["member", "administrator", "creator"].includes(member.status)) {
+      try {
+        const member = await ctx.telegram.getChatMember(channel.id, userId);
+        if (["member", "administrator", "creator"].includes(member.status)) {
+          continue;
+        } else {
+          remainingChannels.push(channel);
+        }
+      } catch (error) {
+        // Обновление статуса канала в базе данных
+        await Channel.updateOne(
+          { _id: channel._id },
+          { $set: { isAdmin: false } }
+        );
+
+        // Уведомление всех администраторов
+        const message = `⚠️ Бот был удален из администраторов канала ${
+          channel.title || channel.id
+        } и теперь не может проверять подписку.`;
+        await notifyAdmins(message, ctx);
+
+        // Добавление канала в список для повторной проверки позже
         continue;
-      } else {
-        remainingChannels.push(channel);
       }
     }
   }
@@ -33,7 +54,10 @@ userBot.action("subscribed", async (ctx) => {
   if (remainingChannels.length > 0) {
     await sendChannelList(ctx, remainingChannels);
   } else {
-    const lastMessage = await ctx.reply("Спасибо за подписку на все каналы!");
+    const linkDoc = await Link.findById("link");
+    const lastMessage = await ctx.reply(
+      `Спасибо за подписку на все каналы! В этом канале вы сможете получить название фильма: ${linkDoc.customLink}`
+    );
     await saveLastMessage(ctx, lastMessage);
   }
 });
