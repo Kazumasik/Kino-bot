@@ -7,10 +7,9 @@ const { notifyAdmins } = require("../utils");
 const userBot = new Composer();
 
 userBot.start(async (ctx) => {
-  const lastMessage = await ctx.reply(
+  await ctx.reply(
     "🔎 Для поиска отправьте КОД фильма/сериала"
   );
-  await saveLastMessage(ctx, lastMessage);
 });
 
 userBot.on("text", async (ctx) => {
