@@ -6,7 +6,7 @@ mongoose.connect(url, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
-
+mongoose.set('useFindAndModify', false);
 const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));

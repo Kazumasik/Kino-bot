@@ -6,8 +6,11 @@ const changeLink = new Scenes.BaseScene("changeLink");
 
 changeLink.enter(async (ctx) => {
   const link = await Link.findById("link");
-  const lastMessage = await ctx.reply(`
-    Текущая ссылка: ${link.customLink}\nПожалуйста, введите новую ссылку:`);
+  const lastMessage = await ctx.reply(
+    `
+    Текущая ссылка: ${link.customLink}\nПожалуйста, введите новую ссылку:`,
+    Markup.inlineKeyboard([[Markup.button.callback("Вернуться", "back")]])
+  );
   await saveLastMessage(ctx, lastMessage);
 });
 
@@ -20,7 +23,7 @@ changeLink.on("text", async (ctx) => {
     );
     await saveLastMessage(ctx, lastMessage);
   } else {
-    await Link.findOneAndUpdate({ customLink: newLink }, { upsert: true });
+    await Link.findOneAndUpdate({ customLink: newLink });
 
     mainMenu(ctx);
     await ctx.scene.leave();
